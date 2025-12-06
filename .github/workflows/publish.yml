@@ -5,7 +5,7 @@ on:
     types: [published]
 
 permissions:
-  contents: read
+  contents: write  # Required for uploading release artifacts
   id-token: write  # Required for trusted publishing
 
 jobs:
