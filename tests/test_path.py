@@ -118,6 +118,31 @@ def test_ensure_storage_directories_already_exists():
         ensure_storage_directories(tmpdir)
 
 
+def test_ensure_storage_directories_not_writable():
+    """Test ensure_storage_directories fails if directory is not writable."""
+    import os
+
+    from mcp_mapped_resource_lib.exceptions import StorageInitializationError
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        storage_root = Path(tmpdir) / "readonly"
+        storage_root.mkdir()
+
+        # Make it readonly
+        old_mode = os.stat(storage_root).st_mode
+        try:
+            os.chmod(storage_root, 0o444)
+
+            # Should raise StorageInitializationError (lines 134-142)
+            with pytest.raises(StorageInitializationError):
+                ensure_storage_directories(str(storage_root))
+
+            os.chmod(storage_root, old_mode)
+        except Exception:
+            os.chmod(storage_root, old_mode)
+            raise
+
+
 def test_validate_path_safety():
     """Test path safety validation."""
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -130,6 +155,24 @@ def test_validate_path_safety():
         # Unsafe path outside storage root
         unsafe_path = Path("/etc/passwd")
         assert not validate_path_safety(unsafe_path, storage_root)
+
+
+def test_validate_path_safety_exception_handling():
+    """Test validate_path_safety handles exceptions."""
+    # Create a path that can't be resolved (lines 171-173)
+    # Passing a non-existent deeply nested path
+    bad_path = Path("/nonexistent/deeply/nested/path/that/does/not/exist")
+
+    # Should return False when resolution fails
+    result = validate_path_safety(bad_path, "/some/storage")
+    assert result is False
+
+
+def test_get_shard_directories_nonexistent_root():
+    """Test get_shard_directories with nonexistent root."""
+    # Should return empty list (line 194)
+    result = get_shard_directories("/nonexistent/path/xyz")
+    assert result == []
 
 
 def test_get_shard_directories_empty():

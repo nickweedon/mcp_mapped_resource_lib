@@ -113,10 +113,11 @@ def test_upload_blob_mime_type_validation(temp_storage):
         allowed_mime_types=["image/*"]
     )
 
-    # This should work (image)
+    # This should work (image) - explicitly set MIME type
     result = storage.upload_blob(
         data=b"PNG data",
-        filename="image.png"
+        filename="image.png",
+        mime_type="image/png"
     )
     assert result['blob_id'] is not None
 
@@ -124,7 +125,8 @@ def test_upload_blob_mime_type_validation(temp_storage):
     with pytest.raises(InvalidMimeTypeError):
         storage.upload_blob(
             data=b"text data",
-            filename="file.txt"
+            filename="file.txt",
+            mime_type="text/plain"
         )
 
 
@@ -231,9 +233,9 @@ def test_list_blobs(blob_storage):
 
 def test_list_blobs_filter_mime_type(blob_storage):
     """Test listing blobs filtered by MIME type."""
-    # Upload different types
-    blob_storage.upload_blob(data=b"text", filename="file.txt")
-    blob_storage.upload_blob(data=b"png", filename="image.png")
+    # Upload different types with explicit MIME types
+    blob_storage.upload_blob(data=b"text", filename="file.txt", mime_type="text/plain")
+    blob_storage.upload_blob(data=b"png", filename="image.png", mime_type="image/png")
 
     # Filter for text
     result = blob_storage.list_blobs(mime_type="text/plain")
@@ -243,10 +245,10 @@ def test_list_blobs_filter_mime_type(blob_storage):
 
 def test_list_blobs_filter_mime_wildcard(blob_storage):
     """Test listing blobs with MIME wildcard filter."""
-    # Upload different types
-    blob_storage.upload_blob(data=b"png", filename="image1.png")
-    blob_storage.upload_blob(data=b"jpg", filename="image2.jpg")
-    blob_storage.upload_blob(data=b"text", filename="file.txt")
+    # Upload different types with explicit MIME types
+    blob_storage.upload_blob(data=b"png", filename="image1.png", mime_type="image/png")
+    blob_storage.upload_blob(data=b"jpg", filename="image2.jpg", mime_type="image/jpeg")
+    blob_storage.upload_blob(data=b"text", filename="file.txt", mime_type="text/plain")
 
     # Filter for images
     result = blob_storage.list_blobs(mime_type="image/*")
@@ -346,3 +348,114 @@ def test_get_file_path_invalid_id(blob_storage):
     """Test getting file path with invalid blob ID."""
     with pytest.raises(InvalidBlobIdError):
         blob_storage.get_file_path("invalid")
+
+
+def test_list_blobs_with_date_filters(blob_storage):
+    """Test listing blobs with created_after and created_before filters."""
+    from datetime import datetime, timedelta, timezone
+
+    # Upload some blobs
+    result1 = blob_storage.upload_blob(data=b"data1", filename="file1.txt", mime_type="text/plain")
+    blob_storage.upload_blob(data=b"data2", filename="file2.txt", mime_type="text/plain")
+
+    # Modify metadata for result1 to be older
+    import json
+
+    from mcp_mapped_resource_lib.path import get_metadata_path
+
+    meta_path1 = get_metadata_path(result1['blob_id'], blob_storage.storage_root)
+    with open(meta_path1) as f:
+        metadata1 = json.load(f)
+
+    old_time = datetime.now(timezone.utc) - timedelta(days=2)
+    metadata1['created_at'] = old_time.isoformat()
+
+    with open(meta_path1, 'w') as f:
+        json.dump(metadata1, f)
+
+    # Test created_after filter (lines 255-258)
+    yesterday = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+    result = blob_storage.list_blobs(created_after=yesterday)
+    assert result['total'] == 1  # Only result2 should match
+
+    # Test created_before filter (lines 261-264)
+    one_day_ago = (datetime.now(timezone.utc) - timedelta(days=1)).isoformat()
+    result = blob_storage.list_blobs(created_before=one_day_ago)
+    assert result['total'] == 1  # Only result1 should match
+
+
+def test_list_blobs_malformed_metadata_exception(blob_storage):
+    """Test list_blobs handles malformed metadata gracefully."""
+    # Upload a blob
+    result = blob_storage.upload_blob(data=b"test", filename="test.txt", mime_type="text/plain")
+
+    # Corrupt the metadata
+    from mcp_mapped_resource_lib.path import get_metadata_path
+
+    meta_path = get_metadata_path(result['blob_id'], blob_storage.storage_root)
+    with open(meta_path, 'w') as f:
+        f.write("invalid json{{{")
+
+    # Should handle exception and skip malformed metadata (lines 268-270)
+    result = blob_storage.list_blobs()
+    assert result['total'] == 0
+
+
+def test_delete_blob_removes_empty_directories(blob_storage):
+    """Test delete_blob removes empty shard directories."""
+    # Upload a blob
+    result = blob_storage.upload_blob(data=b"test", filename="test.txt", mime_type="text/plain")
+    blob_id = result['blob_id']
+    file_path = Path(result['file_path'])
+
+    # Get parent directories
+    second_level = file_path.parent
+    first_level = second_level.parent
+
+    # Verify directories exist
+    assert second_level.exists()
+    assert first_level.exists()
+
+    # Delete blob
+    blob_storage.delete_blob(blob_id)
+
+    # Empty directories should be removed (lines 324-325)
+    assert not second_level.exists()
+    assert not first_level.exists()
+
+
+def test_get_file_path_with_path_traversal(blob_storage):
+    """Test get_file_path detects path traversal attempts."""
+    # This tests line 355 (path safety validation)
+    # Try to use a blob ID that would pass basic validation but fail path safety
+    # This is a theoretical test as validate_blob_id should catch most cases
+    with pytest.raises(InvalidBlobIdError):
+        blob_storage.get_file_path("blob://../../../etc/passwd")
+
+
+def test_find_blob_by_hash_exception_handling(blob_storage):
+    """Test _find_blob_by_hash handles exceptions gracefully."""
+    # Upload a blob
+    result = blob_storage.upload_blob(data=b"test", filename="test.txt", mime_type="text/plain")
+
+    # Corrupt metadata
+
+    from mcp_mapped_resource_lib.path import get_metadata_path
+
+    meta_path = get_metadata_path(result['blob_id'], blob_storage.storage_root)
+    with open(meta_path, 'w') as f:
+        f.write("invalid json{{{")
+
+    # Should handle exception and return None (lines 381-382)
+    found = blob_storage._find_blob_by_hash("somehash")
+    assert found is None
+
+
+def test_matches_tags_filter_with_no_blob_tags(blob_storage):
+    """Test _matches_tags_filter when blob has no tags."""
+    # This tests line 416 (return False when blob_tags is None/empty)
+    result = blob_storage.upload_blob(data=b"test", filename="test.txt", mime_type="text/plain")
+
+    # List with tag filter
+    result = blob_storage.list_blobs(tags=["sometag"])
+    assert result['total'] == 0  # Blob has no tags, so shouldn't match

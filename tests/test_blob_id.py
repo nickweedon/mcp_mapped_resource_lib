@@ -122,6 +122,10 @@ def test_validate_blob_id_path_traversal():
     assert not validate_blob_id("blob://1733437200-a3f9d8c2b1e4f6a7/../../../etc/passwd")
     assert not validate_blob_id("blob://1733437200-a3f9d8c2b1e4f6a7/../../file")
     assert not validate_blob_id("blob://1733437200-a3f9d8c2b1e4f6a7\\..\\file")
+    # Test backslash detection (line 117)
+    assert not validate_blob_id("blob://1733437200\\a3f9d8c2b1e4f6a7")
+    # Test path separator after protocol (line 122)
+    assert not validate_blob_id("blob://1733437200-a3f9d8c2b1e4f6a7/subdir")
 
 
 def test_validate_blob_id_protocol_variations():

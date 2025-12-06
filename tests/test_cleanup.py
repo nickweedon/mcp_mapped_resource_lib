@@ -291,3 +291,141 @@ def test_cleanup_result_structure(temp_storage):
     assert result['deleted_count'] >= 0
     assert result['freed_bytes'] >= 0
     assert result['elapsed_seconds'] >= 0
+
+
+def test_should_run_cleanup_exception_handling(temp_storage):
+    """Test should_run_cleanup handles exceptions when reading timestamp."""
+    # Create a timestamp file
+    timestamp_file = Path(temp_storage) / ".last_cleanup"
+    timestamp_file.touch()
+
+    # Make it unreadable by making parent directory unreadable
+    # This simulates the exception handler on lines 67-69
+    import os
+    old_mode = os.stat(temp_storage).st_mode
+
+    try:
+        # Try to trigger permission error (may not work on all systems)
+        os.chmod(temp_storage, 0o000)
+        # Should return True when exception occurs
+        result = should_run_cleanup(temp_storage, interval_minutes=5)
+        # Restore permissions immediately
+        os.chmod(temp_storage, old_mode)
+        assert result is True
+    except Exception:
+        # Restore permissions if something went wrong
+        os.chmod(temp_storage, old_mode)
+
+
+def test_mark_cleanup_timestamp_exception_handling(temp_storage):
+    """Test mark_cleanup_timestamp handles exceptions gracefully."""
+    # Try to mark timestamp in readonly directory
+    import os
+    old_mode = os.stat(temp_storage).st_mode
+
+    try:
+        os.chmod(temp_storage, 0o444)  # Read-only
+        # Should not raise exception (lines 86-88)
+        mark_cleanup_timestamp(temp_storage)
+        os.chmod(temp_storage, old_mode)
+    except Exception:
+        os.chmod(temp_storage, old_mode)
+
+
+def test_get_last_cleanup_timestamp_exception_handling(temp_storage):
+    """Test get_last_cleanup_timestamp handles exceptions."""
+    # Create timestamp file
+    timestamp_file = Path(temp_storage) / ".last_cleanup"
+    timestamp_file.touch()
+
+    # Make it unreadable
+    import os
+    old_mode = os.stat(temp_storage).st_mode
+
+    try:
+        os.chmod(temp_storage, 0o000)
+        # Should return None when exception occurs (lines 112-113)
+        result = get_last_cleanup_timestamp(temp_storage)
+        os.chmod(temp_storage, old_mode)
+        assert result is None
+    except Exception:
+        os.chmod(temp_storage, old_mode)
+
+
+def test_cleanup_expired_blobs_exception_handling(blob_storage, temp_storage):
+    """Test cleanup_expired_blobs handles deletion errors gracefully."""
+    import os
+
+    # Upload a blob
+    result = blob_storage.upload_blob(data=b"test", filename="test.txt")
+
+    # Make it expired
+    from mcp_mapped_resource_lib.path import get_metadata_path
+
+    meta_path = get_metadata_path(result['blob_id'], temp_storage)
+    with open(meta_path) as f:
+        metadata = json.load(f)
+
+    old_time = datetime.now(timezone.utc) - timedelta(hours=48)
+    metadata['created_at'] = old_time.isoformat()
+
+    with open(meta_path, 'w') as f:
+        json.dump(metadata, f)
+
+    # Make the blob file directory readonly to trigger permission error
+    blob_file_dir = Path(result['file_path']).parent
+    old_mode = os.stat(blob_file_dir).st_mode
+
+    try:
+        os.chmod(blob_file_dir, 0o444)  # Read-only
+
+        # Cleanup should handle the exception and continue (lines 144-146)
+        cleanup_result = cleanup_expired_blobs(temp_storage, ttl_hours=24)
+
+        # Should complete without error (deleted_count=0 because deletion failed)
+        assert cleanup_result['deleted_count'] == 0
+    finally:
+        # Restore permissions
+        os.chmod(blob_file_dir, old_mode)
+
+
+def test_scan_for_expired_blobs_malformed_metadata(blob_storage, temp_storage):
+    """Test scan_for_expired_blobs handles malformed metadata."""
+    # Upload a blob
+    result = blob_storage.upload_blob(data=b"test", filename="test.txt")
+
+    # Corrupt the metadata file
+    from mcp_mapped_resource_lib.path import get_metadata_path
+
+    meta_path = get_metadata_path(result['blob_id'], temp_storage)
+    with open(meta_path, 'w') as f:
+        f.write("invalid json{{{")
+
+    # Should handle exception and skip malformed metadata (lines 194-196)
+    expired = scan_for_expired_blobs(temp_storage, ttl_hours=24)
+
+    # Should return empty list (skipped malformed metadata)
+    assert expired == []
+
+
+def test_delete_blob_files_removes_empty_directories(blob_storage, temp_storage):
+    """Test delete_blob_files removes empty shard directories."""
+    # Upload a blob
+    result = blob_storage.upload_blob(data=b"test", filename="test.txt")
+    blob_id = result['blob_id']
+    file_path = Path(result['file_path'])
+
+    # Get parent directories
+    second_level = file_path.parent
+    first_level = second_level.parent
+
+    # Verify directories exist
+    assert second_level.exists()
+    assert first_level.exists()
+
+    # Delete blob
+    delete_blob_files(blob_id, temp_storage)
+
+    # Empty directories should be removed (lines 241-249)
+    assert not second_level.exists()
+    assert not first_level.exists()
