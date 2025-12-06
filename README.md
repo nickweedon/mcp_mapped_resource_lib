@@ -299,22 +299,35 @@ The DevContainer includes:
 
 ```bash
 # Install development dependencies
-pip install -e ".[dev]"
+make install
+# or: pip install -e ".[dev]"
 
-# Run tests
-pytest
+# Run all checks (recommended - runs lint, typecheck, and test)
+make all
 
-# Run tests with coverage
-pytest --cov=mcp_mapped_resource_lib --cov-report=html
+# Run individual checks
+make lint       # Run ruff linting
+make typecheck  # Run mypy type checking
+make test       # Run pytest with coverage
 
+# Clean build artifacts
+make clean
+
+# Show available commands
+make help
+```
+
+#### Direct Commands (without Makefile)
+
+```bash
 # Lint code
-ruff check src/
-
-# Format code
-ruff format src/
+ruff check src/ tests/
 
 # Type check
 mypy src/
+
+# Run tests with coverage
+pytest tests/ --cov=mcp_mapped_resource_lib --cov-report=html
 ```
 
 ## License

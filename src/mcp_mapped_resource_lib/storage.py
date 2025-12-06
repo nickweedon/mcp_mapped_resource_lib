@@ -202,7 +202,8 @@ class BlobStorage:
             raise BlobNotFoundError(f"Blob not found: {blob_id}")
 
         with open(meta_path) as f:
-            return json.load(f)
+            metadata: BlobMetadata = json.load(f)
+            return metadata
 
     def list_blobs(
         self,
