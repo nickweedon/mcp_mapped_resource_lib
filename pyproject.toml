@@ -28,16 +28,15 @@ classifiers = [
     "Operating System :: OS Independent",
     "Typing :: Typed",
 ]
+dependencies = [
+    "python-magic>=0.4.27",  # MIME type detection
+]
 
 [project.urls]
 Homepage = "https://github.com/nickweedon/mcp_mapped_resource_lib"
 Repository = "https://github.com/nickweedon/mcp_mapped_resource_lib"
 Issues = "https://github.com/nickweedon/mcp_mapped_resource_lib/issues"
 Changelog = "https://github.com/nickweedon/mcp_mapped_resource_lib/blob/main/CHANGELOG.md"
-
-dependencies = [
-    "python-magic>=0.4.27",  # MIME type detection
-]
 
 [project.optional-dependencies]
 dev = [
