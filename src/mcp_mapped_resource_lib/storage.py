@@ -3,7 +3,6 @@
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 from .blob_id import create_blob_id, validate_blob_id
 from .exceptions import (
@@ -45,7 +44,7 @@ class BlobStorage:
         self,
         storage_root: str,
         max_size_mb: int = 100,
-        allowed_mime_types: Optional[list[str]] = None,
+        allowed_mime_types: list[str] | None = None,
         enable_deduplication: bool = True,
         default_ttl_hours: int = 24
     ):
@@ -71,10 +70,10 @@ class BlobStorage:
         self,
         data: bytes,
         filename: str,
-        mime_type: Optional[str] = None,
-        tags: Optional[list[str]] = None,
-        ttl_hours: Optional[int] = None,
-        uploaded_by: Optional[str] = None
+        mime_type: str | None = None,
+        tags: list[str] | None = None,
+        ttl_hours: int | None = None,
+        uploaded_by: str | None = None
     ) -> BlobUploadResult:
         """Upload a binary blob and receive a resource identifier.
 
@@ -202,15 +201,15 @@ class BlobStorage:
         if not meta_path.exists():
             raise BlobNotFoundError(f"Blob not found: {blob_id}")
 
-        with open(meta_path, 'r') as f:
+        with open(meta_path) as f:
             return json.load(f)
 
     def list_blobs(
         self,
-        mime_type: Optional[str] = None,
-        tags: Optional[list[str]] = None,
-        created_after: Optional[str] = None,
-        created_before: Optional[str] = None,
+        mime_type: str | None = None,
+        tags: list[str] | None = None,
+        created_after: str | None = None,
+        created_before: str | None = None,
         page: int = 1,
         page_size: int = 20
     ) -> BlobListResult:
@@ -241,7 +240,7 @@ class BlobStorage:
         for shard_dir in shard_dirs:
             for meta_file in shard_dir.glob("*.meta.json"):
                 try:
-                    with open(meta_file, 'r') as f:
+                    with open(meta_file) as f:
                         metadata: BlobMetadata = json.load(f)
 
                     # Apply filters
@@ -356,7 +355,7 @@ class BlobStorage:
 
         return blob_path
 
-    def _find_blob_by_hash(self, sha256: str) -> Optional[BlobMetadata]:
+    def _find_blob_by_hash(self, sha256: str) -> BlobMetadata | None:
         """Find a blob by its SHA256 hash (for deduplication).
 
         Args:
@@ -372,7 +371,7 @@ class BlobStorage:
         for shard_dir in shard_dirs:
             for meta_file in shard_dir.glob("*.meta.json"):
                 try:
-                    with open(meta_file, 'r') as f:
+                    with open(meta_file) as f:
                         metadata: BlobMetadata = json.load(f)
 
                     if metadata.get('sha256') == sha256:
@@ -400,7 +399,7 @@ class BlobStorage:
 
     def _matches_tags_filter(
         self,
-        blob_tags: Optional[list[str]],
+        blob_tags: list[str] | None,
         filter_tags: list[str]
     ) -> bool:
         """Check if blob has all required tags.

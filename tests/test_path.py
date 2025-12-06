@@ -45,12 +45,13 @@ def test_blob_id_to_path_strips_protocol():
     blob_id_without = "1733437200-a3f9d8c2b1e4f6a7.png"
     storage_root = "/mnt/blob-storage"
 
-    # blob_id_with should work
-    blob_id_to_path(blob_id_with, storage_root)
+    # Both should work and produce the same result
+    path_with = blob_id_to_path(blob_id_with, storage_root)
+    path_without = blob_id_to_path(blob_id_without, storage_root)
 
-    # blob_id_without will fail validation
-    with pytest.raises(InvalidBlobIdError):
-        blob_id_to_path(blob_id_without, storage_root)
+    # They should produce the same path
+    assert path_with == path_without
+    assert str(path_with) == "/mnt/blob-storage/17/33/1733437200-a3f9d8c2b1e4f6a7.png"
 
 
 def test_blob_id_to_path_invalid_id():
@@ -80,7 +81,7 @@ def test_sanitize_filename():
     assert sanitize_filename("file with spaces.txt") == "file_with_spaces.txt"
     assert sanitize_filename("../../etc/passwd") == "etc_passwd"
     assert sanitize_filename("<script>alert(1)</script>.html") == "script_alert_1_script_.html"
-    assert sanitize_filename("my file (1).txt") == "my_file__1_.txt"
+    assert sanitize_filename("my file (1).txt") == "my_file_1_.txt"  # Collapses multiple underscores
     assert sanitize_filename("file___name.txt") == "file_name.txt"  # Collapse underscores
 
 

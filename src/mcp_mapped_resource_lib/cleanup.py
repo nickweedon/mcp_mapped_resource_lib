@@ -4,7 +4,6 @@ import json
 import time
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
 
 from .path import get_metadata_path, get_shard_directories
 from .types import CleanupResult
@@ -14,7 +13,7 @@ def maybe_cleanup_expired_blobs(
     storage_root: str,
     ttl_hours: int,
     cleanup_interval_minutes: int = 5
-) -> Optional[CleanupResult]:
+) -> CleanupResult | None:
     """Run cleanup only if interval has elapsed since last cleanup.
 
     This is the main entry point for lazy cleanup. It checks if enough time
@@ -89,7 +88,7 @@ def mark_cleanup_timestamp(storage_root: str) -> None:
         pass
 
 
-def get_last_cleanup_timestamp(storage_root: str) -> Optional[float]:
+def get_last_cleanup_timestamp(storage_root: str) -> float | None:
     """Get the timestamp of the last cleanup operation.
 
     Args:
@@ -181,7 +180,7 @@ def scan_for_expired_blobs(storage_root: str, ttl_hours: int) -> list[str]:
         for meta_file in shard_dir.glob("*.meta.json"):
             try:
                 # Read metadata
-                with open(meta_file, 'r') as f:
+                with open(meta_file) as f:
                     metadata = json.load(f)
 
                 # Check if blob has expired

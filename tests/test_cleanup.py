@@ -102,7 +102,7 @@ def test_scan_for_expired_blobs(blob_storage, temp_storage):
     from mcp_mapped_resource_lib.path import get_metadata_path
 
     meta_path = get_metadata_path(blob_id, temp_storage)
-    with open(meta_path, 'r') as f:
+    with open(meta_path) as f:
         metadata = json.load(f)
 
     # Set created_at to 48 hours ago
@@ -164,7 +164,7 @@ def test_cleanup_expired_blobs(blob_storage, temp_storage):
     from mcp_mapped_resource_lib.path import get_metadata_path
 
     meta_path1 = get_metadata_path(result1['blob_id'], temp_storage)
-    with open(meta_path1, 'r') as f:
+    with open(meta_path1) as f:
         metadata = json.load(f)
 
     old_time = datetime.now(timezone.utc) - timedelta(hours=48)
@@ -260,7 +260,7 @@ def test_cleanup_with_custom_ttl(blob_storage, temp_storage):
     from mcp_mapped_resource_lib.path import get_metadata_path
 
     meta_path = get_metadata_path(result['blob_id'], temp_storage)
-    with open(meta_path, 'r') as f:
+    with open(meta_path) as f:
         metadata = json.load(f)
 
     old_time = datetime.now(timezone.utc) - timedelta(hours=2)

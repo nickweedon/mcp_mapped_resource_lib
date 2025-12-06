@@ -92,11 +92,14 @@ def sanitize_filename(filename: str) -> str:
     # Keep alphanumeric, dots, dashes, underscores
     sanitized = re.sub(r'[^\w\.\-]', '_', filename)
 
-    # Remove leading dots and path separators
-    sanitized = sanitized.lstrip('./')
+    # Remove leading dots and path separators (strip all leading dots, slashes, underscores)
+    sanitized = sanitized.lstrip('./_')
 
     # Collapse multiple underscores
     sanitized = re.sub(r'_+', '_', sanitized)
+
+    # Strip leading/trailing underscores after collapse
+    sanitized = sanitized.strip('_')
 
     # Ensure it's not empty
     if not sanitized:

@@ -1,7 +1,6 @@
 """MIME type detection and validation utilities."""
 
 import mimetypes
-from typing import Optional
 
 try:
     import magic
@@ -45,7 +44,7 @@ def detect_mime_type(data: bytes, filename: str) -> str:
     return mime_type or "application/octet-stream"
 
 
-def validate_mime_type(mime_type: str, allowed: Optional[list[str]]) -> bool:
+def validate_mime_type(mime_type: str, allowed: list[str] | None) -> bool:
     """Validate MIME type against allowed list.
 
     Supports wildcard matching (e.g., "image/*" matches "image/png").

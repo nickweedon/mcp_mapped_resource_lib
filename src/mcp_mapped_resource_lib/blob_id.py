@@ -3,7 +3,6 @@
 import re
 import secrets
 import time
-from typing import Optional
 
 from .exceptions import InvalidBlobIdError
 from .types import BlobIdComponents
@@ -14,7 +13,7 @@ from .types import BlobIdComponents
 BLOB_ID_PATTERN = re.compile(r'^blob://(\d{10})-([a-f0-9]{16})(\.[a-z0-9]+)?$')
 
 
-def create_blob_id(extension: Optional[str] = None) -> str:
+def create_blob_id(extension: str | None = None) -> str:
     """Generate a unique blob identifier.
 
     The blob ID format is: blob://TIMESTAMP-HASH.EXT
