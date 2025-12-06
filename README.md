@@ -279,6 +279,24 @@ volumes:
 
 ## Development
 
+### Using DevContainer (Recommended)
+
+This project includes a complete DevContainer setup for VS Code:
+
+1. Install [Docker](https://www.docker.com/get-started) and [VS Code](https://code.visualstudio.com/)
+2. Install the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+3. Open the project in VS Code
+4. Click "Reopen in Container" when prompted (or run "Dev Containers: Reopen in Container" from the command palette)
+
+The DevContainer includes:
+- Python 3.12 with uv package manager
+- All development dependencies pre-installed
+- Docker CLI for testing containerized MCP servers
+- Claude Code CLI for AI-assisted development
+- Pre-configured extensions (Python, Pylance, Ruff, Claude Code)
+
+### Local Development
+
 ```bash
 # Install development dependencies
 pip install -e ".[dev]"

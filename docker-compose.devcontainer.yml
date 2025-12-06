@@ -1,0 +1,18 @@
+services:
+  mcp-mapped-resource-lib-vscode:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        INSTALL_MCP: false
+        CREATE_VSCODE_USER: true
+    image: mcp-mapped-resource-lib-vscode:latest
+    container_name: mcp-mapped-resource-lib-devcontainer
+    environment:
+      - HOST_USER=${USER}
+    # Run as vscode user for devcontainer
+    user: vscode
+    # Mount local workspace for live development
+    volumes:
+      - .:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
