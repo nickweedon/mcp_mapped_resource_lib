@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from mcp_mapped_resource_lib.exceptions import InvalidBlobIdError, StorageInitializationError
+from mcp_mapped_resource_lib.exceptions import InvalidBlobIdError
 from mcp_mapped_resource_lib.path import (
     blob_id_to_path,
     ensure_storage_directories,
@@ -45,9 +45,10 @@ def test_blob_id_to_path_strips_protocol():
     blob_id_without = "1733437200-a3f9d8c2b1e4f6a7.png"
     storage_root = "/mnt/blob-storage"
 
-    # Both should work but blob_id_without will fail validation
-    path1 = blob_id_to_path(blob_id_with, storage_root)
+    # blob_id_with should work
+    blob_id_to_path(blob_id_with, storage_root)
 
+    # blob_id_without will fail validation
     with pytest.raises(InvalidBlobIdError):
         blob_id_to_path(blob_id_without, storage_root)
 

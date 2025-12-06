@@ -20,9 +20,6 @@ Example:
 
 __version__ = "0.1.0"
 
-# Core storage class
-from .storage import BlobStorage
-
 # Blob ID utilities
 from .blob_id import (
     create_blob_id,
@@ -68,6 +65,9 @@ from .path import (
     sanitize_filename,
     validate_path_safety,
 )
+
+# Core storage class
+from .storage import BlobStorage
 
 # Type definitions
 from .types import (

@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 
 from .blob_id import strip_blob_protocol, validate_blob_id
-from .exceptions import InvalidBlobIdError, PathTraversalError, StorageInitializationError
+from .exceptions import InvalidBlobIdError, StorageInitializationError
 
 
 def blob_id_to_path(blob_id: str, storage_root: str) -> Path:
