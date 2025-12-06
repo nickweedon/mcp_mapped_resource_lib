@@ -6,6 +6,34 @@ authors = [{name = "MCP Community", email = "noreply@mcp.dev"}]
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
+keywords = [
+    "mcp",
+    "model-context-protocol",
+    "blob-storage",
+    "docker-volumes",
+    "binary-transfer",
+    "resource-management",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: System :: Filesystems",
+    "Topic :: Internet :: WWW/HTTP",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
+]
+
+[project.urls]
+Homepage = "https://github.com/nickweedon/mcp_mapped_resource_lib"
+Repository = "https://github.com/nickweedon/mcp_mapped_resource_lib"
+Issues = "https://github.com/nickweedon/mcp_mapped_resource_lib/issues"
+Changelog = "https://github.com/nickweedon/mcp_mapped_resource_lib/blob/main/CHANGELOG.md"
 
 dependencies = [
     "python-magic>=0.4.27",  # MIME type detection

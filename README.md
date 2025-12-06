@@ -1,5 +1,10 @@
 # MCP Mapped Resource Library
 
+[![PyPI version](https://badge.fury.io/py/mcp-mapped-resource-lib.svg)](https://badge.fury.io/py/mcp-mapped-resource-lib)
+[![Python Versions](https://img.shields.io/pypi/pyversions/mcp-mapped-resource-lib.svg)](https://pypi.org/project/mcp-mapped-resource-lib/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Tests](https://github.com/nickweedon/mcp_mapped_resource_lib/actions/workflows/test.yml/badge.svg)](https://github.com/nickweedon/mcp_mapped_resource_lib/actions/workflows/test.yml)
+
 A pip-installable Python library providing reusable utilities for MCP servers handling binary blob transfers through shared Docker volumes.
 
 ## Features
@@ -14,14 +19,33 @@ A pip-installable Python library providing reusable utilities for MCP servers ha
 
 ## Installation
 
-```bash
-# From PyPI (when published)
-pip install mcp-mapped-resource-lib
+### From PyPI (Recommended)
 
-# From source (development)
-git clone https://github.com/yourusername/mcp-mapped-resource-lib.git
-cd mcp-mapped-resource-lib
-pip install -e .
+```bash
+pip install mcp-mapped-resource-lib
+```
+
+### System Dependencies
+
+The library requires `libmagic` for MIME type detection:
+
+```bash
+# Ubuntu/Debian
+sudo apt-get install libmagic1
+
+# macOS
+brew install libmagic
+
+# Windows (using conda)
+conda install -c conda-forge python-magic
+```
+
+### From Source (Development)
+
+```bash
+git clone https://github.com/nickweedon/mcp_mapped_resource_lib.git
+cd mcp_mapped_resource_lib
+pip install -e ".[dev]"
 ```
 
 ## Quick Start
@@ -279,11 +303,16 @@ mypy src/
 
 MIT License - see LICENSE file for details
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history and release notes.
+
 ## Contributing
 
 Contributions are welcome! Please see CONTRIBUTING.md for guidelines.
 
 ## Support
 
-- Issues: https://github.com/yourusername/mcp-mapped-resource-lib/issues
-- Documentation: https://github.com/yourusername/mcp-mapped-resource-lib/docs
+- Issues: https://github.com/nickweedon/mcp_mapped_resource_lib/issues
+- Documentation: https://github.com/nickweedon/mcp_mapped_resource_lib/docs
+- PyPI: https://pypi.org/project/mcp-mapped-resource-lib/
