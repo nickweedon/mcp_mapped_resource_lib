@@ -1,0 +1,196 @@
+# Docker Compose example for MCP servers using shared blob storage volume
+#
+# This example shows how to set up multiple MCP servers that share a blob storage
+# volume, demonstrating the primary use case for mcp-mapped-resource-lib.
+
+version: '3.8'
+
+services:
+  # Primary blob upload server (read-write access)
+  blob-upload-server:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: blob-upload-server
+    volumes:
+      - blob-storage:/mnt/blob-storage  # Read-write access
+    environment:
+      # Blob storage configuration
+      - BLOB_STORAGE_ROOT=/mnt/blob-storage
+      - BLOB_MAX_SIZE_MB=100
+      - BLOB_DEFAULT_TTL_HOURS=24
+      - BLOB_ALLOWED_MIME_TYPES=  # Empty = allow all
+      - BLOB_ENABLE_DEDUPLICATION=true
+
+      # Cleanup configuration
+      - BLOB_LAZY_CLEANUP_ENABLED=true
+      - BLOB_LAZY_CLEANUP_INTERVAL_MINUTES=5
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Consumer server 1 (read-only access recommended)
+  blob-consumer-server-1:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: blob-consumer-1
+    volumes:
+      - blob-storage:/mnt/blob-storage:ro  # Read-only access for safety
+    environment:
+      - BLOB_STORAGE_ROOT=/mnt/blob-storage
+    ports:
+      - "8001:8000"
+    restart: unless-stopped
+    depends_on:
+      - blob-upload-server
+
+  # Consumer server 2 (read-only access recommended)
+  blob-consumer-server-2:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: blob-consumer-2
+    volumes:
+      - blob-storage:/mnt/blob-storage:ro  # Read-only access for safety
+    environment:
+      - BLOB_STORAGE_ROOT=/mnt/blob-storage
+    ports:
+      - "8002:8000"
+    restart: unless-stopped
+    depends_on:
+      - blob-upload-server
+
+  # Image processing server (reads from blob storage, writes processed images)
+  image-processor-server:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: image-processor
+    volumes:
+      - blob-storage:/mnt/blob-storage  # Read-write for storing processed images
+    environment:
+      - BLOB_STORAGE_ROOT=/mnt/blob-storage
+      - BLOB_ALLOWED_MIME_TYPES=image/*  # Only allow images
+      - BLOB_MAX_SIZE_MB=50
+    ports:
+      - "8003:8000"
+    restart: unless-stopped
+    depends_on:
+      - blob-upload-server
+
+volumes:
+  # Shared blob storage volume
+  blob-storage:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ${BLOB_STORAGE_HOST_PATH:-./blob-storage-data}
+
+  # Alternative: Use named volume without host binding
+  # blob-storage:
+  #   driver: local
+
+  # Alternative: Use NFS for distributed storage
+  # blob-storage:
+  #   driver: local
+  #   driver_opts:
+  #     type: nfs
+  #     o: addr=nfs-server.example.com,rw
+  #     device: ":/path/to/blob-storage"
+
+# Networks (optional, for isolation)
+networks:
+  default:
+    name: mcp-blob-network
+    driver: bridge
+
+---
+
+# Minimal example for single server
+# version: '3.8'
+#
+# services:
+#   blob-server:
+#     build: .
+#     volumes:
+#       - blob-storage:/mnt/blob-storage
+#     environment:
+#       - BLOB_STORAGE_ROOT=/mnt/blob-storage
+#     ports:
+#       - "8000:8000"
+#
+# volumes:
+#   blob-storage:
+#     driver: local
+
+---
+
+# Development example with local source mounting
+# version: '3.8'
+#
+# services:
+#   blob-server-dev:
+#     build: .
+#     volumes:
+#       - blob-storage:/mnt/blob-storage
+#       - ./src:/app/src  # Mount source for development
+#       - ./examples:/app/examples
+#     environment:
+#       - BLOB_STORAGE_ROOT=/mnt/blob-storage
+#       - PYTHONUNBUFFERED=1
+#     ports:
+#       - "8000:8000"
+#     command: python -m watchdog auto-restart --recursive --patterns="*.py" -- python examples/fastmcp_example.py
+#
+# volumes:
+#   blob-storage:
+#     driver: local
+
+---
+
+# Example .env file for this docker-compose.yml:
+#
+# # Blob Storage Configuration
+# BLOB_STORAGE_HOST_PATH=/var/lib/mcp-blob-storage
+# BLOB_MAX_SIZE_MB=100
+# BLOB_DEFAULT_TTL_HOURS=24
+# BLOB_ALLOWED_MIME_TYPES=
+# BLOB_ENABLE_DEDUPLICATION=true
+#
+# # Cleanup Configuration
+# BLOB_LAZY_CLEANUP_ENABLED=true
+# BLOB_LAZY_CLEANUP_INTERVAL_MINUTES=5
+
+---
+
+# Usage:
+#
+# 1. Create blob storage directory on host:
+#    mkdir -p ./blob-storage-data
+#
+# 2. Start all services:
+#    docker-compose up -d
+#
+# 3. View logs:
+#    docker-compose logs -f
+#
+# 4. Test blob upload (upload server):
+#    curl -X POST http://localhost:8000/upload \
+#      -H "Content-Type: application/json" \
+#      -d '{"data": "SGVsbG8sIHdvcmxkIQ==", "filename": "hello.txt"}'
+#
+# 5. Access blob from consumer server:
+#    curl http://localhost:8001/blob/<blob_id>
+#
+# 6. Stop all services:
+#    docker-compose down
+#
+# 7. Remove volumes (careful - deletes all blobs):
+#    docker-compose down -v
