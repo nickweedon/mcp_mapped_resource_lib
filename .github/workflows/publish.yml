@@ -41,4 +41,4 @@ jobs:
       if: github.event_name == 'release'
       with:
         files: dist/*
-        token: ${{ secrets.GITHUB_TOKEN }}
+        token: ${{ github.token }}
