@@ -37,7 +37,7 @@ jobs:
         skip-existing: true
 
     - name: Upload wheels to release
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       if: github.event_name == 'release'
       with:
         files: dist/*
