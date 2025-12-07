@@ -1,4 +1,4 @@
-.PHONY: help install test lint typecheck all clean
+.PHONY: help install test lint typecheck all clean release
 
 # Default target
 help:
@@ -9,6 +9,7 @@ help:
 	@echo "  make test       - Run pytest unit tests"
 	@echo "  make all        - Run lint, typecheck, and test (recommended)"
 	@echo "  make clean      - Remove build artifacts and cache files"
+	@echo "  make release [VERSION=X.Y.Z] - Create a new release (auto-increments if no VERSION)"
 
 # Install package with dev dependencies
 install:
@@ -45,3 +46,13 @@ clean:
 	rm -rf .mypy_cache/
 	rm -rf .ruff_cache/
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
+
+# Create a new release (VERSION is optional - auto-increments patch if not provided)
+release:
+	@if [ -z "$(VERSION)" ]; then \
+		echo "Auto-incrementing patch version..."; \
+		./release.sh; \
+	else \
+		echo "Creating release $(VERSION)..."; \
+		./release.sh $(VERSION); \
+	fi

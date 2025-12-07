@@ -330,6 +330,101 @@ mypy src/
 pytest tests/ --cov=mcp_mapped_resource_lib --cov-report=html
 ```
 
+## Releasing New Versions
+
+This project includes a simple release automation workflow for creating new versions and publishing to PyPI.
+
+### Prerequisites
+
+1. **Install GitHub CLI** (`gh`):
+   ```bash
+   # macOS
+   brew install gh
+
+   # Ubuntu/Debian
+   sudo apt install gh
+
+   # Windows
+   winget install GitHub.cli
+   ```
+
+2. **Authenticate with GitHub**:
+   ```bash
+   gh auth login
+   ```
+
+### Creating a Release
+
+Use the Makefile target to create a new release:
+
+```bash
+# Auto-increment patch version (e.g., 0.1.0 → 0.1.1)
+make release
+
+# Or specify a version explicitly for minor/major releases
+make release VERSION=0.2.0
+```
+
+Or use the script directly:
+
+```bash
+# Auto-increment patch version
+./release.sh
+
+# Or specify version explicitly
+./release.sh 0.2.0
+```
+
+### What Happens During Release
+
+The release script performs the following steps automatically:
+
+1. **Detects** the latest version from git tags (not `pyproject.toml`)
+2. **Validates** version format (must be semver: X.Y.Z)
+3. **Checks** that GitHub CLI is installed and authenticated
+4. **Verifies** working directory is clean (no uncommitted changes)
+5. **Updates** version in `pyproject.toml`
+6. **Runs** `make all` (lint + typecheck + test) to ensure quality
+7. **Commits** the version bump
+8. **Creates** a git tag (e.g., `v0.2.0`)
+9. **Pushes** commit and tag to GitHub
+10. **Creates** GitHub release with auto-generated release notes
+11. **Triggers** automatic PyPI publishing via GitHub Actions
+
+### Important Notes
+
+- ⚠️ The `release` target is **not** part of the regular build process (`make all`)
+- ⚠️ Releases must be created **explicitly** - they never happen automatically
+- ✅ If no version is specified, the patch version is auto-incremented from the **latest git tag** (not `pyproject.toml`)
+- ✅ Run `git fetch --tags` before releasing to ensure you have the latest tags from GitHub
+- ✅ For minor/major releases, specify the version explicitly (e.g., `VERSION=0.2.0` or `VERSION=1.0.0`)
+- ✅ All tests must pass before a release can be created
+- ✅ PyPI publishing happens automatically via GitHub Actions (using Trusted Publishers)
+- ✅ You can monitor the publishing workflow at: https://github.com/nickweedon/mcp_mapped_resource_lib/actions
+
+### Versioning
+
+This project follows [Semantic Versioning](https://semver.org/):
+
+- **PATCH** (0.0.X): Bug fixes, backwards compatible - `make release` (auto-increment)
+- **MINOR** (0.X.0): New features, backwards compatible - `make release VERSION=0.2.0`
+- **MAJOR** (X.0.0): Breaking changes - `make release VERSION=1.0.0`
+
+### Troubleshooting
+
+**Error: GitHub CLI is not installed**
+- Install `gh` using the instructions above
+
+**Error: GitHub CLI is not authenticated**
+- Run `gh auth login` and follow the prompts
+
+**Error: Working directory has uncommitted changes**
+- Commit or stash your changes before releasing: `git status`
+
+**Error: Tests failed**
+- Fix the failing tests before creating a release
+- The version change in `pyproject.toml` will be automatically reverted
+
 ## License
 
 MIT License - see LICENSE file for details

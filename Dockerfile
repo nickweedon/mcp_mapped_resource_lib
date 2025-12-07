@@ -27,6 +27,11 @@ RUN install -m 0755 -d /etc/apt/keyrings && \
     apt-get install -y docker-ce-cli docker-compose-plugin && \
     rm -rf /var/lib/apt/lists/*
 
+# Install GitHub CLI (gh)
+RUN apt-get update && \
+    apt-get install -y gh && \
+    rm -rf /var/lib/apt/lists/*
+
 # Configure locale
 RUN echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
     locale-gen

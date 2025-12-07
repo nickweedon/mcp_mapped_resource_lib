@@ -165,6 +165,38 @@ pytest tests/ -v --cov=mcp_mapped_resource_lib --cov-report=term-missing --cov-r
 3. Update docs/ if changing public API
 4. Ensure test coverage remains high (target: >85%)
 
+### Creating a Release
+**IMPORTANT**: Releases are MANUAL and EXPLICIT only. Never create releases automatically.
+
+1. **Prerequisites**: Ensure `gh` CLI is installed and authenticated (`gh auth login`)
+2. **Quality Check**: Run `make all` to ensure all checks pass
+3. **Create Release**:
+   - **Patch release** (bug fixes): `make release` (auto-increments: 0.1.0 → 0.1.1)
+   - **Minor release** (new features): `make release VERSION=0.2.0`
+   - **Major release** (breaking changes): `make release VERSION=1.0.0`
+4. **Alternative**: Run `./release.sh` (auto-increment) or `./release.sh X.Y.Z` (explicit version)
+
+**What happens during release:**
+- If no version specified, patch version is auto-incremented from **latest git tag** (not `pyproject.toml`)
+- Script detects latest version from git tags (e.g., finds v0.1.1 → creates v0.1.2)
+- Version is updated in `pyproject.toml`
+- `make all` runs automatically (lint, typecheck, test)
+- Version bump is committed
+- Git tag is created (e.g., `v0.2.0`)
+- Commit and tag are pushed to GitHub
+- GitHub release is created with auto-generated notes
+- PyPI publishing happens automatically via GitHub Actions (Trusted Publishers)
+
+**Key Points:**
+- ⚠️ `make release` is **NOT** part of the regular build process
+- ⚠️ Releases are **NEVER** triggered by `make all` or any other build command
+- ⚠️ Always run `git fetch --tags` before releasing to get latest tags from GitHub
+- ✅ Auto-increment reads from git tags, not pyproject.toml (ensures correct versioning)
+- ✅ Auto-increment is patch-only (0.1.0 → 0.1.1) - specify version for minor/major
+- ✅ All tests must pass before release can proceed
+- ✅ If tests fail, version change is automatically reverted
+- ✅ PyPI publishing is fully automated via GitHub Actions workflow
+
 ### Common Development Tasks
 
 #### Adding a New Feature
