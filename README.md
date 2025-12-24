@@ -144,12 +144,18 @@ def upload_blob(
 
     return result
 
-@mcp.resource("blob://{blob_id}")
+@mcp.tool()
 def get_blob_content(blob_id: str) -> str:
-    """Retrieve blob content as base64."""
+    """Retrieve blob content as base64-encoded string."""
     file_path = storage.get_file_path(blob_id)
     with open(file_path, 'rb') as f:
         return base64.b64encode(f.read()).decode()
+
+@mcp.tool()
+def get_blob_file_path(blob_id: str) -> dict:
+    """Get filesystem path for direct blob access (for shared volumes)."""
+    file_path = storage.get_file_path(blob_id)
+    return {"blob_id": blob_id, "file_path": str(file_path)}
 ```
 
 ## Core Modules

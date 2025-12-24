@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **BREAKING**: Documentation now recommends using MCP tools instead of resource endpoints for blob retrieval
+  - Updated `README.md` to show `get_blob_content()` as a tool instead of `@mcp.resource()`
+  - Updated `docs/INTEGRATION_GUIDE.md` with a note explaining why tools are preferred over template resources
+  - Updated `examples/fastmcp_example.py` to implement `get_blob_content()` as a tool
+  - Reason: Template resources (e.g., `blob://{blob_id}`) are not well-supported by some MCP clients
+  - Migration: Replace `@mcp.resource("blob://{blob_id}")` with `@mcp.tool()` decorator for `get_blob_content()`
+
 ## [0.1.0] - TBD
 
 ### Added

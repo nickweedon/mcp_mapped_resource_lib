@@ -2,6 +2,12 @@
 
 This guide shows how to integrate the MCP Mapped Resource Library into your MCP servers for handling binary blob transfers through shared Docker volumes.
 
+## Important: Use Tools, Not Resource Endpoints
+
+**Note**: This library uses MCP **tools** for blob retrieval instead of MCP **resource endpoints** (e.g., `@mcp.resource("blob://{blob_id}")`). Template resources are not well-supported by some MCP clients and can cause compatibility issues. The tool-based approach provides better compatibility across all MCP clients.
+
+For blob retrieval, use the `get_blob_content()` tool which returns base64-encoded data, or `get_blob_file_path()` for direct filesystem access when using shared Docker volumes.
+
 ## Table of Contents
 
 - [Quick Start](#quick-start)
@@ -185,9 +191,13 @@ def delete_blob(blob_id: str) -> dict:
         return {"error": str(e)}
 
 
-@mcp.resource("blob://{blob_id}")
+@mcp.tool()
 def get_blob_content(blob_id: str) -> str:
     """Retrieve blob content as base64-encoded data.
+
+    Note: This is implemented as a tool instead of an MCP resource endpoint
+    because template resources (blob://{blob_id}) are not well-supported
+    by all MCP clients.
 
     Args:
         blob_id: Blob identifier
@@ -200,7 +210,27 @@ def get_blob_content(blob_id: str) -> str:
         with open(file_path, 'rb') as f:
             return base64.b64encode(f.read()).decode()
     except (InvalidBlobIdError, BlobNotFoundError) as e:
-        return base64.b64encode(str(e).encode()).decode()
+        return f"Error: {str(e)}"
+
+
+@mcp.tool()
+def get_blob_file_path(blob_id: str) -> dict:
+    """Get filesystem path for direct blob access.
+
+    Useful when multiple MCP servers share the same Docker volume
+    and need to access blobs directly from the filesystem.
+
+    Args:
+        blob_id: Blob identifier
+
+    Returns:
+        Dictionary with blob_id, file_path, and exists flag
+    """
+    try:
+        file_path = storage.get_file_path(blob_id)
+        return {"blob_id": blob_id, "file_path": str(file_path), "exists": True}
+    except (InvalidBlobIdError, BlobNotFoundError) as e:
+        return {"error": str(e), "exists": False}
 
 
 if __name__ == "__main__":

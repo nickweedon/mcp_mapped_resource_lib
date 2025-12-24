@@ -248,35 +248,43 @@ def get_blob_file_path(blob_id: str) -> dict:
         return {"error": f"Failed to get file path: {str(e)}", "exists": False}
 
 
-@mcp.resource("blob://{blob_id}")
-def get_blob_content(blob_id: str) -> str:
+@mcp.tool()
+def get_blob_content(blob_id: str) -> dict:
     """Retrieve blob content as base64-encoded data.
 
-    This is an MCP resource that allows clients to fetch blob content
-    by using the blob:// URI scheme.
+    Note: This is implemented as a tool instead of an MCP resource endpoint.
+    Template resources (blob://{blob_id}) are not well-supported by some MCP
+    clients and can cause compatibility issues. The tool-based approach provides
+    better compatibility across all MCP clients.
 
     Args:
-        blob_id: Blob identifier (without "blob://" prefix)
+        blob_id: Blob identifier (e.g., "blob://1733437200-a3f9d8c2b1e4f6a7.txt")
 
     Returns:
-        Base64-encoded blob content
+        Dictionary containing:
+        - blob_id: The blob identifier
+        - content: Base64-encoded blob content
+        - size_bytes: Size of the decoded content in bytes
 
     Example:
-        In an MCP client:
-        >>> content = client.read_resource("blob://1733437200-a3f9d8c2b1e4f6a7.txt")
-        >>> data = base64.b64decode(content)
+        >>> result = get_blob_content("blob://1733437200-a3f9d8c2b1e4f6a7.txt")
+        >>> data = base64.b64decode(result['content'])
     """
     try:
-        # Add protocol prefix if not present
-        if not blob_id.startswith("blob://"):
-            blob_id = f"blob://{blob_id}"
-
         file_path = storage.get_file_path(blob_id)
         with open(file_path, "rb") as f:
-            return base64.b64encode(f.read()).decode()
+            content = f.read()
+            return {
+                "blob_id": blob_id,
+                "content": base64.b64encode(content).decode(),
+                "size_bytes": len(content),
+            }
+    except InvalidBlobIdError as e:
+        return {"error": f"Invalid blob ID: {str(e)}"}
+    except BlobNotFoundError as e:
+        return {"error": f"Blob not found: {str(e)}"}
     except Exception as e:
-        # Return error as base64
-        return base64.b64encode(f"Error: {str(e)}".encode()).decode()
+        return {"error": f"Failed to get blob content: {str(e)}"}
 
 
 @mcp.prompt()
@@ -317,12 +325,14 @@ def blob_storage_info() -> str:
 ## Available Tools
 - upload_blob: Upload binary data
 - get_blob_metadata: Get blob metadata
+- get_blob_content: Retrieve blob content as base64
 - list_blobs: List blobs with filtering
 - delete_blob: Delete a blob
 - get_blob_file_path: Get filesystem path
 
-## Available Resources
-- blob://<blob_id>: Retrieve blob content
+## Note
+This server uses tools for blob retrieval instead of resource endpoints
+for better compatibility with all MCP clients.
 """
 
 
